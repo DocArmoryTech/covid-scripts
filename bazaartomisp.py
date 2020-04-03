@@ -94,7 +94,13 @@ for hash,sample in samples.copy().items():
         if ( 'comment' in details ):
             comment=details['comment']
             if ( comment is not None ):
-                sample.add_attribute("text", value=comment, to_ids=False, disable_correlation=True)
+                newattr = MISPAttribute()
+                newattr.category = commattr['category']
+                newattr.type = commattr['type']
+                newattr.value = commattr['value']
+                newattr.to_ids = commattr['to_ids']
+                sample.add_reference(referenced_uuid=newattr.uuid, relationship_type='related-to')
+                attributes.update({newattr.value : newattr})
 
         # find and add x-references
         if ( 'file_information' in details):
