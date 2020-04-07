@@ -13,8 +13,13 @@ misp_key="your-api-key-goes-here"       ################## YOUR API KEY
 #
 misp_event_name="COVID-19 - bazaar.abuse.ch ++"
 
+misp_check_cert=True                    ################### Set to False to ignore certificate errors
+                                        ################### Or a CA_BUNDLE in case of self signed certificate 
+                                        ################### (the concatenation of all the *.crt of the chain)
+
 bazaar_url="https://mb-api.abuse.ch/api/v1/"
 bazaar_query={'query':'get_taginfo', 'tag':'COVID-19'}
+
 
 API_REF_CONTEXTS=['dropped_by_sha256','dropping_sha256']
 API_LINK_CONTEXTS=['urlhaus','any_run','joe_sandbox','malpedia','twitter','links']
@@ -37,8 +42,13 @@ def getSampleDetail(sha256_hash):
     details_request=requests.post(bazaar_url, data=details_query)
 
     print("detailing {} ...".format(sha256_hash))
-    samp_details=json.loads(details_request.text)
-    return samp_details.get('data')[0] if (samp_details.get('query_status') == 'ok') else None
+    try:
+        samp_details=json.loads(details_request.text)
+        return samp_details.get('data')[0] if (samp_details.get('query_status') == 'ok') else None
+    except:
+        print(details_request.text)
+
+    return None
 
 # a dict of samples to add to the Event, keyed with <k>sha256 containing <v>MISP-Object Files
 samples={}
@@ -49,7 +59,7 @@ existing_samples={}
 attributes = {}
 
 #misp setup
-pm = PyMISP(misp_url, misp_key)
+pm = PyMISP(misp_url, misp_key, ssl=misp_check_cert)
 misp_event=MISPEvent()
 search=pm.search(controller='events', eventinfo=misp_event_name)
 
