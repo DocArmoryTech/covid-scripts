@@ -13,7 +13,7 @@ import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Parse domaintools covid-19 threat-list')
-    parser.add_argument("-d", "--date", required=False, help="Ignore entries after this date")
+    parser.add_argument("-d", "--date", required=False, help="Ignore entries before this date")
     args = parser.parse_args()
 
 
