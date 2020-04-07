@@ -20,7 +20,6 @@ misp_check_cert=True                    ################### Set to False to igno
 bazaar_url="https://mb-api.abuse.ch/api/v1/"
 bazaar_query={'query':'get_taginfo', 'tag':'COVID-19'}
 
-
 API_REF_CONTEXTS=['dropped_by_sha256','dropping_sha256']
 API_LINK_CONTEXTS=['urlhaus','any_run','joe_sandbox','malpedia','twitter','links']
 
@@ -46,7 +45,7 @@ def getSampleDetail(sha256_hash):
         samp_details=json.loads(details_request.text)
         return samp_details.get('data')[0] if (samp_details.get('query_status') == 'ok') else None
     except:
-        print(details_request.text)
+        print(details_request.content)
 
     return None
 
@@ -56,6 +55,7 @@ samples={}
 existing_samples={}
 
 # a cache of all the attributes to be added to the event
+existing_attributes = {}
 attributes = {}
 
 #misp setup
@@ -73,7 +73,7 @@ if ( len(search) == 1):
 
     #reload 'attributes' dictionary from misp_event
     for attr in misp_event.get('Attribute'):
-        attributes.update({attr.value : attr})
+        existing_attributes.update({attr.value : attr})
 else:
     misp_event.info=misp_event_name
     pm.add_event(misp_event)
@@ -102,15 +102,26 @@ for hash,sample in samples.copy().items():
     if (details is not None):
         # if it exists, add the comment
         if ( 'comment' in details ):
+
             comment=details['comment']
-            if ( comment is not None ):
-                newattr = MISPAttribute()
-                newattr.category = commattr['category']
-                newattr.type = commattr['type']
-                newattr.value = commattr['value']
-                newattr.to_ids = commattr['to_ids']
-                sample.add_reference(referenced_uuid=newattr.uuid, relationship_type='related-to')
-                attributes.update({newattr.value : newattr})
+            if ( comment is not None ) and (len(comment) > 0):
+                sample.add_attribute("text", value=comment, to_ids=False, disable_correlation=True)
+                for commattr in pm.freetext(misp_event, comment):
+                   newattr = MISPAttribute()
+                   if (commattr['value'] not in existing_attributes):
+                        if (commattr['value'] not in attributes):
+                            newattr.category = commattr['category']
+                            newattr.type = commattr['type']
+                            newattr.value = commattr['value']
+                            newattr.to_ids = commattr['to_ids']
+
+                            attributes.update({newattr.value : newattr})
+                        else:
+                            newattr=attributes[commattr['value']]
+                   else:
+                       newattr=existing_attributes[commattr['value']]
+
+                   sample.add_reference(referenced_uuid=newattr.uuid, relationship_type='related-to')
 
         # find and add x-references
         if ( 'file_information' in details):
@@ -143,15 +154,18 @@ for hash,sample in samples.copy().items():
                     elif ( context.casefold() in API_LINK_CONTEXTS ):
                         url_ref=value.replace('\\','')
                         attribute = MISPAttribute()
-                        if ( url_ref not in attributes):
-                            attribute.category = "External analysis"
-                            attribute.type = "url"
-                            attribute.value = url_ref
-                            attribute.to_ids = False
-                            attribute.disable_correlation = True
-                            attributes.update({attribute.value : attribute})
+                        if ( url_ref not in existing_attributes):
+                            if ( url_ref not in attributes):
+                                attribute.category = "External analysis"
+                                attribute.type = "url"
+                                attribute.value = url_ref
+                                attribute.to_ids = False
+                                attribute.disable_correlation = True
+                                attributes.update({attribute.value : attribute})
+                            else:
+                                attribute=attributes[url_ref]
                         else:
-                            attribute=attributes[url_ref]
+                            attribute=existing_attributes[url_ref]
 
                         sample.add_reference(referenced_uuid=attribute.uuid, relationship_type='related-to')
                     else:
