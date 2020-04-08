@@ -33,7 +33,15 @@ if __name__ == '__main__':
 
         for line in json_records.split('\n'):
             cmfrt+=1
-            data=json.loads(line)
+            data=None
+            try:
+                data=json.loads(line)
+            except:
+                print("This line wouldn't parse as json")
+                print(line)
+
+            if (data is None):
+                continue
 
             fseen=datetime.datetime.strptime(data["first_seen"]['$date'], '%Y-%m-%dT%H:%M:%S.%fZ')
             lseen=datetime.datetime.strptime(data["last_seen"]['$date'], '%Y-%m-%dT%H:%M:%S.%fZ')
