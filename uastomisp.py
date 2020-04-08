@@ -12,7 +12,7 @@ import datetime
 
 misp_url="https://your.misp/" ################## YOUR MISP URL
 misp_key=""       ################## YOUR API KEY
-badpanda_url="https://[your-server-name]/public.php/webdav/uas.all.tlpred.json.gz"
+badpanda_url="https://[your-server-name]/public.php/webdav/[a-file-name]"
 badpanda_user="the-share-name"
 badpanda_password=""
 pm=PyMISP(misp_url, misp_key)
