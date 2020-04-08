@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     query_strings.append("fs:{}+".format(args.date))
 
-    it = client.iterator('/intelligence/search', params={'query':  " ".join(query_strings)}, limit=10000)
+    it = client.iterator('/intelligence/search', params={'query':  " ".join(query_strings), 'descriptors_only':'True'}, batch_size=25, limit=10000)
 
     pm=PyMISP(misp_url, misp_key)
     misp_event_name="CTI League - Phishing attachments [{}]"
@@ -105,3 +105,6 @@ if __name__ == '__main__':
         me.add_object(vtreport)
 
         pm.update_event(me)
+
+    # really annoying vt-py client close
+    client.close()
